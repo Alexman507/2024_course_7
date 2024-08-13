@@ -19,5 +19,3 @@ def send_telegram(habit):
     )
     if response.status_code != status.HTTP_200_OK:
         print(f"Ошибка при отправке сообщения в Telegram: {response.text}")
-
-        
