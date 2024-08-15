@@ -1,4 +1,6 @@
-version: "3.12"
+networks:
+  drf_network:
+    driver: bridge
 
 services:
   db:
@@ -20,6 +22,8 @@ services:
       context: .
     tty: true
     command: sh -c 'python manage.py migrate && python manage.py runserver 0.0.0.0:8000'
+    networks:
+      - drf_network
     volumes:
       - .:/app
     restart: on-failure
@@ -32,6 +36,8 @@ services:
         condition: service_healthy
   redis:
     image: redis:latest
+    networks:
+      - drf_network
     restart: on-failure
     expose:
       - '6379'
@@ -43,6 +49,8 @@ services:
     env_file:
       - .env
     command: celery -A config worker -l INFO
+    networks:
+      - drf_network
     depends_on:
       - redis
       - app
@@ -50,6 +58,8 @@ services:
 
   celery-beat:
     build: .
+    networks:
+      - drf_network
     tty: true
     volumes:
       - .:/app
