@@ -6,7 +6,7 @@ services:
     env_file:
       - .env
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      test: [ "CMD-SHELL", '-c', 'pg_isready -d $POSTGRES_PASSWORD -U -$POSTGRES_USER']
       interval: 5s
       timeout: 5s
       retries: 5
@@ -60,6 +60,6 @@ services:
       - redis
       - app
       - db
-    command: celery -A config beat -l info -S django
+    command: [ "sh", "-c", "celery -A config beat -l INFO && celery -A config -l info -P gevent" ]
 volumes:
   pg_data:
