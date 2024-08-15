@@ -33,7 +33,7 @@ services:
 
   redis:
     image: redis:latest
-    restart: no
+    restart: on-failure
     expose:
       - '6379'
 
@@ -41,7 +41,7 @@ services:
   celery-worker:
     build: .
     tty: true
-    restart: no
+    restart: on-failure
     environment:
       DEBUG: "True"
       CELERY_BROKER_URL: "redis://redis:6379/0"
@@ -55,9 +55,9 @@ services:
   celery-beat:
     build: .
     environment:
-      - CELERY_BROKER_URL=redis://redis:6379
+      CELERY_BROKER_URL: "redis://redis:6379/0"
     tty: true
-    restart: no
+    restart: on-failure
     links:
       - pgdb
       - redis
