@@ -1,79 +1,70 @@
-networks:
-  drf_network:
-    driver: bridge
+version: "3.12"
 
 services:
-  db:
-    image: postgres:16
-    environment:
-      POSTGRES_USER: "postgres"
-      POSTGRES_PASSWORD: "123"
-      POSTGRES_DB: "drf"
-    env_file:
-      - .env
-    healthcheck:
-      test: [ "CMD-SHELL", '-c', 'pg_isready -d $POSTGRES_PASSWORD -U -$POSTGRES_USER']
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    expose:
-      - "5432"
-    volumes:
-      - pg_data:/var/lib/postgresql/data
-
-  app:
-    build:
-      context: .
-    tty: true
+  django:
+    # Сборка образа для сервиса django из текущей директории
+    build: .
+    # Задание имени контейнера для сервиса django
+    container_name: django
+    # Задание команды, которую нужно запустить при запуске контейнера для сервиса django
     command: sh -c 'python manage.py migrate && python manage.py runserver 0.0.0.0:8000'
-    networks:
-      - drf_network
     volumes:
-      - .:/app
-    restart: on-failure
+      - .:/usr/src/app
+    # Открытие порта на хостовой машине и перенаправление на порт в контейнере
     ports:
-      - "8000:8000"
-    env_file:
-      - .env
+      - 8000:8000
+    # Зависимость от другого сервиса
     depends_on:
-      db:
-        condition: service_healthy
+      - pgdb
+
+  pgdb:
+    # Использование готового образа postgres
+    image: postgres
+    # Задание переменных окружения для контейнера с postgres
+    environment:
+      - POSTGRES_DB=drf
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=123
+     # Задание имени контейнера для сервиса pgdb
+    container_name: pgdb
+     # Связывание тома с директорией в контейнере для сохранения данных postgres
+    volumes:
+      - pgdbdata:/var/lib/postgresql/data/
+
   redis:
     image: redis:latest
-    networks:
-      - drf_network
-    restart: on-failure
+    restart: no
     expose:
       - '6379'
+
 
   celery-worker:
     build: .
     tty: true
-    restart: on-failure
-    env_file:
-      - .env
+    restart: no
+    environment:
+      DEBUG: "True"
+      CELERY_BROKER_URL: "redis://redis:6379/0"
+      CELERY_RESULT_BACKEND: "redis://redis:6379/0"
     command: celery -A config worker -l INFO
-    networks:
-      - drf_network
     depends_on:
       - redis
-      - app
-      - db
+      - django
+      - pgdb
 
   celery-beat:
     build: .
-    networks:
-      - drf_network
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379
     tty: true
-    volumes:
-      - .:/app
-    env_file:
-      - .env
-    restart: on-failure
+    restart: no
+    links:
+      - pgdb
+      - redis
     depends_on:
       - redis
-      - app
-      - db
+      - django
+      - pgdb
     command: [ "sh", "-c", "celery -A config beat -l INFO && celery -A config -l info -P gevent" ]
 volumes:
-  pg_data:
+  pgdbdata: null
