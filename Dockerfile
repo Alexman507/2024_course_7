@@ -1,8 +1,11 @@
 # Используем базовый образ Python
 FROM python:3.11
 
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
 # Устанавливаем рабочую директорию в контейнере
-WORKDIR /app
+WORKDIR .
 
 # Копируем зависимости в контейнер
 COPY requirements.txt .
@@ -14,4 +17,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Команда для запуска приложения при старте контейнера
-CMD ["python", "app.py"]
+CMD ["python", "./manage.py", "runserver"]
