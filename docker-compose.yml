@@ -5,26 +5,23 @@ services:
     image: postgres:16
     env_file:
       - .env
-    environment:
-      POSTGRES_USER: "postgres"
-      POSTGRES_PASSWORD: "postgres"
-      POSTGRES_DB: "db_name"
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 5s
       timeout: 5s
       retries: 5
-    ports:
-      - "5432:5432"
+    expose:
+      - "5432"
     volumes:
-      - ./pddata:/var/lib/postgresql/data
+      - pg_data:/var/lib/postgresql/data
 
-  api:
+  app:
     build:
       context: .
-    tty: false
+    tty: true
+    command: sh -c 'python manage.py migrate && python manage.py runserver 0.0.0.0:8000'
     volumes:
-      - .:/code
+      - .:/app
     restart: on-failure
     ports:
       - "8000:8000"
@@ -34,35 +31,35 @@ services:
       db:
         condition: service_healthy
   redis:
-    image: redislabs/redismod
-    ports:
-      - '6379:6379'
+    image: redis:latest
+    restart: on-failure
+    expose:
+      - '6379'
 
   celery-worker:
     build: .
-    container_name: celery-worker
-    restart: always
+    tty: true
+    restart: on-failure
     env_file:
       - .env
     command: celery -A config worker -l INFO
     depends_on:
       - redis
+      - app
+      - db
 
   celery-beat:
     build: .
-    container_name: celery-beat
+    tty: true
+    volumes:
+      - .:/app
     env_file:
       - .env
+    restart: on-failure
     depends_on:
       - redis
+      - app
+      - db
     command: celery -A config beat -l info -S django
 volumes:
-  api:
-  db:
-    driver: local
-  redis:
-    driver: local
-  celery-worker:
-    driver: local
-  celery-beat:
-    driver: local
+  pg_data:
