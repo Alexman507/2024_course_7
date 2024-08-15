@@ -193,7 +193,7 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 CELERY_BEAT_SCHEDULE = {
     "task-name": {
-        "task": "myapp.tasks.my_task",  # Путь к задаче
+        "task": "habits.tasks.habit",  # Путь к задаче
         "schedule": timedelta(
             minutes=1
         ),  # Расписание выполнения задачи (например, каждые 10 минут)
