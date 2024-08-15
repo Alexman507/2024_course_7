@@ -188,13 +188,13 @@ CELERY_TIMEZONE = "Europe/Moscow"
 CELERY_TASK_TRACK_STARTED = os.getenv("FLAG_TRACKER") == "True"
 
 # Максимальное время на выполнение задачи
-CELERY_TASK_TIME_LIMIT = os.getenv("TASK_TIME")
+CELERY_TASK_TIME_LIMIT = 30 * 60
 
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 CELERY_BEAT_SCHEDULE = {
     "task-name": {
-        "task": "myapp.tasks.my_task",  # Путь к задаче
+        "task": "habits.tasks.habit",  # Путь к задаче
         "schedule": timedelta(
             minutes=1
         ),  # Расписание выполнения задачи (например, каждые 10 минут)
